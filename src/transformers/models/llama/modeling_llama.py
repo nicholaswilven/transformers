@@ -415,21 +415,22 @@ class LlamaAttention(nn.Module):
             print(torch_xla._XLAC._get_xla_sharding_spec(query_states))
             print(torch_xla._XLAC._get_xla_sharding_spec(key_states))
             print(torch_xla._XLAC._get_xla_sharding_spec(value_states))
-
+        print('1','q','k', query_states.shape, key_states.shape)
         query_states = query_states.view(bsz, q_len, self.num_heads, self.head_dim).transpose(1, 2)
         key_states = key_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
         value_states = value_states.view(bsz, q_len, self.num_key_value_heads, self.head_dim).transpose(1, 2)
-
+        print('2','q','k', query_states.shape, key_states.shape)
         past_key_value = getattr(self, "past_key_value", past_key_value)
         cos, sin = self.rotary_emb(value_states, position_ids)
         query_states, key_states = apply_rotary_pos_emb(query_states, key_states, cos, sin)
-
+        print('3','q','k', query_states.shape, key_states.shape)
         if past_key_value is not None:
             # sin and cos are specific to RoPE models; cache_position needed for the static cache
             cache_kwargs = {"sin": sin, "cos": cos, "cache_position": cache_position}
             key_states, value_states = past_key_value.update(key_states, value_states, self.layer_idx, cache_kwargs)
-
+        print('4','q','k', query_states.shape, key_states.shape)
         kv_seq_len = key_states.shape[-2]
+        print("kv_seq_len",kv_seq_len)
         key_states = repeat_kv(key_states, self.num_key_value_groups)
         value_states = repeat_kv(value_states, self.num_key_value_groups)
 
@@ -437,7 +438,7 @@ class LlamaAttention(nn.Module):
         # key_states   Batch Num_head Kv_seq Head_dim
         #attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
         
-        print('q','k', query_states.shape, key_states.shape)
+        print('5','q','k', query_states.shape, key_states.shape)
         assert query_states.shape == torch.Size((bsz, self.num_heads, q_len, self.head_dim)), f'incorrect query_states shape: {query_states.shape}'
         assert key_states.shape == torch.Size((bsz, self.num_heads, kv_seq_len, self.head_dim)), f'incorrect key_states_states shape: {key_states.shape}'
         attn_weights = torch.einsum('bnsh,bnkh->bnsk', query_states, key_states) / math.sqrt(self.head_dim)
