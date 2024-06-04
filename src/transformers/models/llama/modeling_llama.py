@@ -436,6 +436,8 @@ class LlamaAttention(nn.Module):
         # query_states Batch Num_head Seq Head_dim
         # key_states   Batch Num_head Kv_seq Head_dim
         #attn_weights = torch.matmul(query_states, key_states.transpose(2, 3)) / math.sqrt(self.head_dim)
+        
+        print('q','k', query_states.shape, key_states.shape)
         assert query_states.shape == torch.Size((bsz, self.num_heads, q_len, self.head_dim)), f'incorrect query_states shape: {query_states.shape}'
         assert key_states.shape == torch.Size((bsz, self.num_heads, kv_seq_len, self.head_dim)), f'incorrect key_states_states shape: {key_states.shape}'
         attn_weights = torch.einsum('bnsh,bnkh->bnsk', query_states, key_states) / math.sqrt(self.head_dim)
@@ -450,8 +452,9 @@ class LlamaAttention(nn.Module):
             print(torch_xla._XLAC._get_xla_sharding_spec(attn_weights))
 
         if attention_mask is not None:  # no matter the length, we just slice it
+            print("am",attention_mask.shape)
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
-            print(attn_weights.shape, causal_mask.shape)
+            print('aw','cm', attn_weights.shape, causal_mask.shape)
             attn_weights = attn_weights + causal_mask
 
         # upcast attention to fp32
