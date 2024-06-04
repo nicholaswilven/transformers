@@ -451,6 +451,7 @@ class LlamaAttention(nn.Module):
 
         if attention_mask is not None:  # no matter the length, we just slice it
             causal_mask = attention_mask[:, :, :, : key_states.shape[-2]]
+            print(attn_weights.shape, causal_mask.shape)
             attn_weights = attn_weights + causal_mask
 
         # upcast attention to fp32
